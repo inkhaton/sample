@@ -1,0 +1,178 @@
+npm install angular-oauth2-oidc
+
+///Create a new service to handle authentication. For example, create a file auth.service.ts:
+import { Injectable } from '@angular/core';
+import { OAuthService, AuthConfig } from 'angular-oauth2-oidc';
+import { JwksValidationHandler } from 'angular-oauth2-oidc-jwks';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class AuthService {
+  constructor(private oauthService: OAuthService) {
+    this.configureOAuth();
+  }
+
+  private configureOAuth() {
+    const authConfig: AuthConfig = {
+      issuer: 'https://login.microsoftonline.com/common/v2.0',
+      redirectUri: window.location.origin,
+      clientId: 'YOUR_AZURE_CLIENT_ID',
+      scope: 'openid profile email',
+      responseType: 'code',
+      oidc: true,
+      strictDiscoveryDocumentValidation: false,
+      showDebugInformation: true,
+      jwks: 'https://login.microsoftonline.com/common/discovery/v2.0/keys',
+    };
+
+    this.oauthService.configure(authConfig);
+    this.oauthService.tokenValidationHandler = new JwksValidationHandler();
+    this.oauthService.loadDiscoveryDocumentAndTryLogin();
+  }
+
+  login(): void {
+    this.oauthService.initLoginFlow();
+  }
+
+  logout(): void {
+    this.oauthService.logOut();
+  }
+
+  get identityClaims() {
+    return this.oauthService.getIdentityClaims();
+  }
+
+  get accessToken() {
+    return this.oauthService.getAccessToken();
+  }
+
+  get isAuthenticated(): boolean {
+    return this.oauthService.hasValidAccessToken();
+  }
+}
+
+
+
+
+
+
+//b. Modify your app.module.ts to include OAuthService configuration
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
+import { AuthService } from './auth.service';
+import { HttpClientModule } from '@angular/common/http';
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    HttpClientModule
+  ],
+  providers: [AuthService],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+
+
+
+
+
+//In app-routing.module.ts:
+
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+import { HomeComponent } from './home/home.component';
+import { ProtectedComponent } from './protected/protected.component';
+import { AuthGuard } from './auth.guard';
+
+const routes: Routes = [
+  { path: '', component: HomeComponent },
+  { path: 'protected', component: ProtectedComponent, canActivate: [AuthGuard] },
+];
+
+@NgModule({
+  imports: [RouterModule.forRoot(routes)],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+
+
+
+
+
+
+
+
+
+//Create the auth.guard.ts:
+import { Injectable } from '@angular/core';
+import { CanActivate, Router } from '@angular/router';
+import { AuthService } from './auth.service';
+
+@Injectable({
+  providedIn: 'root',
+})
+export class AuthGuard implements CanActivate {
+  constructor(private authService: AuthService, private router: Router) {}
+
+  canActivate(): boolean {
+    if (this.authService.isAuthenticated) {
+      return true;
+    } else {
+      this.router.navigate(['/']);
+      return false;
+    }
+  }
+}
+
+
+
+
+
+
+
+//In your component, you can inject the AuthService and use it to manage authentication:
+import { Component } from '@angular/core';
+import { AuthService } from './auth.service';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent {
+  constructor(private authService: AuthService) {}
+
+  login() {
+    this.authService.login();
+  }
+
+  logout() {
+    this.authService.logout();
+  }
+
+  get isAuthenticated() {
+    return this.authService.isAuthenticated;
+  }
+}
+
+
+
+
+
+
+
+//Make sure to set your environment variables in environment.ts:
+export const environment = {
+  production: false,
+  azureClientId: 'YOUR_AZURE_CLIENT_ID',
+  azureTenantId: 'YOUR_AZURE_TENANT_ID',
+  redirectUri: 'http://localhost:4200',
+};
