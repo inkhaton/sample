@@ -1,0 +1,120 @@
+// src/aws-exports.ts
+
+const awsconfig = {
+  Auth: {
+    region: 'us-west-2', // Replace with your region
+    userPoolId: 'us-west-2_Example', // Replace with your User Pool ID
+    userPoolWebClientId: 'example1234567890', // Replace with your App Client ID
+    identityPoolId: 'us-west-2:example-identity-pool-id', // Optional: if using Identity Pools
+    oauth: {
+      domain: 'your-cognito-domain.auth.us-west-2.amazoncognito.com', // Replace with your domain
+      scope: ['openid', 'profile', 'email'],
+      redirectSignIn: 'http://localhost:4200/', // Replace with your redirect URL
+      redirectSignOut: 'http://localhost:4200/', // Replace with your redirect URL
+      responseType: 'code' // or 'token' depending on your configuration
+    }
+  }
+};
+
+export default awsconfig;
+
+
+// src/app/app.module.ts
+
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { AppComponent } from './app.component';
+import { AmplifyAngularModule, AmplifyService } from '@aws-amplify/ui-angular';
+import Amplify from 'aws-amplify';
+import awsconfig from './aws-exports';
+
+Amplify.configure(awsconfig);
+
+@NgModule({
+  declarations: [
+    AppComponent
+  ],
+  imports: [
+    BrowserModule,
+    AmplifyAngularModule
+  ],
+  providers: [AmplifyService],
+  bootstrap: [AppComponent]
+})
+export class AppModule { }
+
+
+
+
+
+
+
+
+// src/app/app.component.ts
+
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { Auth } from 'aws-amplify';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
+})
+export class AppComponent implements OnInit {
+  isAuthenticated: boolean = false;
+  user: any = null;
+
+  constructor(private router: Router) {}
+
+  async ngOnInit() {
+    try {
+      this.user = await Auth.currentAuthenticatedUser();
+      this.isAuthenticated = true;
+    } catch (error) {
+      this.isAuthenticated = false;
+      // Redirect to login if necessary
+      this.router.navigate(['/login']);
+    }
+  }
+
+  async signOut() {
+    try {
+      await Auth.signOut();
+      this.isAuthenticated = false;
+      this.router.navigate(['/login']);
+    } catch (error) {
+      console.error('Error signing out', error);
+    }
+  }
+}
+
+
+
+
+// src/app/auth.guard.ts
+
+import { Injectable } from '@angular/core';
+import { CanActivate, Router } from '@angular/router';
+import { Auth } from 'aws-amplify';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthGuard implements CanActivate {
+
+  constructor(private router: Router) {}
+
+  async canActivate(): Promise<boolean> {
+    try {
+      await Auth.currentAuthenticatedUser();
+      return true;
+    } catch {
+      this.router.navigate(['/login']);
+      return false;
+    }
+  }
+}
+
+
+
