@@ -363,3 +363,125 @@ export class AuthCallbackComponent implements OnInit {
   }
 }
 
+//---------------------------------------------------------
+
+
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+            .authorizeRequests()
+                .antMatchers("/oauth2/**", "/login/**").permitAll()
+                .anyRequest().authenticated()
+                .and()
+            .oauth2Login()
+                .defaultSuccessURL("/home", true);
+    }
+}
+
+
+
+
+
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          cognito:
+            client-id: your-client-id
+            client-secret: your-client-secret
+            scope: openid,profile,email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
+            client-name: Cognito
+        provider:
+          cognito:
+            authorization-uri: https://{yourCognitoDomain}.auth.{region}.amazoncognito.com/oauth2/authorize
+            token-uri: https://{yourCognitoDomain}.auth.{region}.amazoncognito.com/oauth2/token
+            user-info-uri: https://{yourCognitoDomain}.auth.{region}.amazoncognito.com/oauth2/userInfo
+            user-name-attribute: sub
+			
+	
+
+
+
+
+
+
+
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestTemplate;
+
+@Controller
+public class OAuth2Controller {
+
+    @Value("${spring.security.oauth2.client.provider.cognito.token-uri}")
+    private String tokenUri;
+
+    @Value("${spring.security.oauth2.client.registration.cognito.client-id}")
+    private String clientId;
+
+    @Value("${spring.security.oauth2.client.registration.cognito.client-secret}")
+    private String clientSecret;
+
+    private final OAuth2AuthorizedClientService authorizedClientService;
+    private final ClientRegistrationRepository clientRegistrationRepository;
+
+    public OAuth2Controller(OAuth2AuthorizedClientService authorizedClientService, ClientRegistrationRepository clientRegistrationRepository) {
+        this.authorizedClientService = authorizedClientService;
+        this.clientRegistrationRepository = clientRegistrationRepository;
+    }
+
+    @GetMapping("/oauth2/token")
+    public ResponseEntity<String> getToken(@RequestParam("code") String code) {
+        ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId("cognito");
+        RestTemplate restTemplate = new RestTemplate();
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+
+        String body = "grant_type=authorization_code" +
+                      "&code=" + code +
+                      "&redirect_uri=" + clientRegistration.getRedirectUriTemplate() +
+                      "&client_id=" + clientId +
+                      "&client_secret=" + clientSecret;
+
+        HttpEntity<String> requestEntity = new HttpEntity<>(body, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(tokenUri, HttpMethod.POST, requestEntity, String.class);
+
+        return ResponseEntity.ok(response.getBody());
+    }
+}	
+			
+			
