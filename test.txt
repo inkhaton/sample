@@ -485,3 +485,12 @@ public class OAuth2Controller {
 }	
 			
 			
+export class CodeVerifierService {
+  getCodeVerifier(): string | null {
+    const stateKey = Object.keys(sessionStorage).find(key => key.startsWith('PKCE_verifier'));
+    if (stateKey) {
+      return sessionStorage.getItem(stateKey);
+    }
+    return null;
+  }
+}
