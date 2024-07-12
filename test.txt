@@ -494,3 +494,50 @@ export class CodeVerifierService {
     return null;
   }
 }
+
+
+@Controller
+public class OAuth2Controller {
+
+    @Value("${spring.security.oauth2.client.provider.cognito.token-uri}")
+    private String tokenUri;
+
+    private final ClientRegistrationRepository clientRegistrationRepository;
+    private final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService;
+
+    public OAuth2Controller(ClientRegistrationRepository clientRegistrationRepository,
+                            OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService) {
+        this.clientRegistrationRepository = clientRegistrationRepository;
+        this.oAuth2UserService = oAuth2UserService;
+    }
+
+    @GetMapping("/oauth2/token")
+    public ResponseEntity<String> getToken(@RequestParam("code") String code, @RequestParam("code_verifier") String codeVerifier) {
+        ClientRegistration clientRegistration = clientRegistrationRepository.findByRegistrationId("cognito");
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/x-www-form-urlencoded");
+
+        String body = "grant_type=authorization_code" +
+                      "&code=" + code +
+                      "&redirect_uri=" + clientRegistration.getRedirectUriTemplate() +
+                      "&client_id=" + clientRegistration.getClientId() +
+                      "&client_secret=" + clientRegistration.getClientSecret() +
+                      "&code_verifier=" + codeVerifier;
+
+        HttpEntity<String> requestEntity = new HttpEntity<>(body, headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(tokenUri, HttpMethod.POST, requestEntity, String.class);
+
+        return ResponseEntity.ok(response.getBody());
+    }
+
+    @GetMapping("/user-info")
+    public ResponseEntity<OAuth2User> getUserInfo(@RequestParam("token") String token) {
+        OAuth2UserRequest userRequest = new OAuth2UserRequest(clientRegistrationRepository.findByRegistrationId("cognito"), new OAuth2AccessToken(TokenType.BEARER, token, null, null));
+        OAuth2User oAuth2User = oAuth2UserService.loadUser(userRequest);
+
+        return ResponseEntity.ok(oAuth2User);
+    }
+}
