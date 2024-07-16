@@ -568,3 +568,17 @@ public class OAuth2Controller {
     public OidcUserService oidcUserService() {
         return new OidcUserService();
     }
+
+
+
+private setToken(accessToken: string, expiresIn: number) {
+    const expirationDate = new Date(new Date().getTime() + expiresIn * 1000);
+    this.oauthService.setStorage(sessionStorage); // or localStorage
+    this.oauthService.setupAutomaticSilentRefresh();
+    this.oauthService.tryLogin({
+      disableOAuth2StateCheck: true
+    }).then(() => {
+      this.oauthService['_storage'].setItem('access_token', accessToken);
+      this.oauthService['_storage'].setItem('expires_at', expirationDate.getTime().toString());
+    });
+  }
