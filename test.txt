@@ -582,3 +582,58 @@ private setToken(accessToken: string, expiresIn: number) {
       this.oauthService['_storage'].setItem('expires_at', expirationDate.getTime().toString());
     });
   }
+
+
+
+
+
+
+
+
+
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+@Component
+public class DatabaseHealthIndicator implements HealthIndicator {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public DatabaseHealthIndicator(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    @Override
+    public Health health() {
+        try {
+            jdbcTemplate.queryForObject("SELECT 1 FROM DUAL", Integer.class);
+            return Health.up().withDetail("Database", "Available").build();
+        } catch (Exception e) {
+            return Health.down().withDetail("Database", "Unavailable").withException(e).build();
+        }
+    }
+}
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jdbc</artifactId>
+</dependency>
+
+management.endpoints.web.exposure.include=health
+management.endpoint.health.show-details=always
+
+
+
+# Add a health check for the Actuator endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+
+CMD-SHELL
+curl -f http://localhost:8080/actuator/health || exit 1
