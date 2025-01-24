@@ -639,3 +639,89 @@ CMD-SHELL
 curl -f http://localhost:8080/actuator/health || exit 1
 
 curl -s http://localhost:8080/actuator/health | jq -e '.status == \"UP\"' || exit 1
+
+
+
+
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.query.LdapQuery;
+import org.springframework.ldap.query.LdapQueryBuilder;
+import org.springframework.ldap.query.QueryBuilder;
+import org.springframework.stereotype.Component;
+
+@Component
+public class LdapHealthIndicator implements HealthIndicator {
+
+    private final LdapTemplate ldapTemplate;
+
+    // Inject the LdapTemplate bean, which is responsible for interacting with the LDAP server
+    public LdapHealthIndicator(LdapTemplate ldapTemplate) {
+        this.ldapTemplate = ldapTemplate;
+    }
+
+    @Override
+    public Health health() {
+        try {
+            // Perform a basic query to check if the LDAP server is reachable
+            LdapQuery query = LdapQueryBuilder.query().where("objectClass").is("user");
+            ldapTemplate.search(query, (attrs) -> null); // A simple search query to check connection
+
+            // Return UP status if no exception occurs
+            return Health.up().withDetail("LDAP", "Server is reachable").build();
+        } catch (Exception e) {
+            // Return DOWN status with error details if the connection fails
+            return Health.down().withDetail("LDAP", "Server is down: " + e.getMessage()).build();
+        }
+    }
+}
+
+
+
+
+
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.stereotype.Component;
+
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import java.util.Properties;
+
+@Component
+public class SmtpHealthIndicator implements HealthIndicator {
+
+    private final String smtpHost = "smtp.example.com"; // Replace with your SMTP server address
+    private final int smtpPort = 587;                  // Common SMTP port (25, 465, or 587)
+    private final String username = "your-email@example.com"; // Replace with your SMTP username
+    private final String password = "your-password";         // Replace with your SMTP password
+
+    @Override
+    public Health health() {
+        Properties properties = new Properties();
+        properties.put("mail.smtp.auth", "true");
+        properties.put("mail.smtp.starttls.enable", "true");
+        properties.put("mail.smtp.host", smtpHost);
+        properties.put("mail.smtp.port", smtpPort);
+
+        Session session = Session.getInstance(properties);
+
+        try (Transport transport = session.getTransport("smtp")) {
+            // Attempt to connect to the SMTP server
+            transport.connect(smtpHost, smtpPort, username, password);
+
+            // If successful, return UP status
+            return Health.up().withDetail("SMTP", "Server is reachable").build();
+        } catch (MessagingException e) {
+            // If an exception occurs, return DOWN status with the error message
+            return Health.down()
+                    .withDetail("SMTP", "Server is unreachable")
+                    .withDetail("Error", e.getMessage())
+                    .build();
+        }
+    }
+}
+
+
