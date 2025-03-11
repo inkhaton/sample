@@ -768,6 +768,50 @@ public class CurlExecutorController {
 }
 
 
+AWSTemplateFormatVersion: '2010-09-09'
+Mappings:
+  AccountToEnvironment:
+    '123456789012': # Example Account ID
+      Environment: 'production'
+    '987654321098': # Example Account ID
+      Environment: 'staging'
+    '112233445566': # Example Account ID
+      Environment: 'development'
+
+  EntryPointMap:
+    production:
+      Command:
+        - "/usr/bin/java"
+        - "-jar"
+        - "app-prod.jar"
+    staging:
+      Command:
+        - "/usr/bin/java"
+        - "-jar"
+        - "app-staging.jar"
+    development:
+      Command:
+        - "/usr/bin/java"
+        - "-jar"
+        - "app-dev.jar"
+
+Resources:
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: "my-task"
+      ContainerDefinitions:
+        - Name: "my-container"
+          Image: "my-image:latest"
+          EntryPoint: 
+            !FindInMap 
+              - EntryPointMap
+              - !FindInMap [AccountToEnvironment, !Ref "AWS::AccountId", Environment]
+              - Command
+          Memory: 512
+          Cpu: 256
+          Essential: true
+
 
 
 
