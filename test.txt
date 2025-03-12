@@ -813,5 +813,47 @@ Resources:
           Essential: true
 
 
+--------------------------------------
+
+Conditions:
+  IsProdAccount: !Equals [!Ref "AWS::AccountId", "123456789012"]
+  IsStagingAccount: !Equals [!Ref "AWS::AccountId", "234567890123"]
+  IsDevAccount: !Equals [!Ref "AWS::AccountId", "345678901234"]
+
+Resources:
+  rFargateService:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Name: my-container
+          Image: my-image:latest
+          EntryPoint:
+            !If
+              - IsProdAccount
+              - 
+                - "/usr/bin/java"
+                - "-jar"
+                - "app-prod.jar"
+                - "--config=/etc/prod-config.yaml"
+              - !If
+                - IsStagingAccount
+                - 
+                  - "/usr/bin/java"
+                  - "-jar"
+                  - "app-staging.jar"
+                  - "--debug"
+                - !If
+                  - IsDevAccount
+                  - 
+                    - "/usr/bin/java"
+                    - "-jar"
+                    - "app-dev.jar"
+                    - "--debug"
+                  - 
+                    - "/usr/bin/java"
+                    - "-jar"
+                    - "app.jar"
+                    - "--default-config"
+
 
 
