@@ -1,3 +1,40 @@
+public class Mapper {
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    // Map ParentDBO to ParentDTO
+    public static ParentDTO mapToDTO(ParentDBO parentDBO) {
+        ParentDTO parentDTO = objectMapper.convertValue(parentDBO, ParentDTO.class);
+
+        // Manually map child objects if necessary
+        if (parentDBO.getChildren() != null) {
+            List<ChildDTO> children = parentDBO.getChildren().stream()
+                    .map(child -> objectMapper.convertValue(child, ChildDTO.class))
+                    .collect(Collectors.toList());
+            parentDTO.setChildren(children);
+        }
+
+        return parentDTO;
+    }
+
+    // Map list of ParentDBO to list of ParentDTO
+    public static List<ParentDTO> mapToDTOList(List<ParentDBO> parentDBOs) {
+        return parentDBOs.stream()
+                .map(Mapper::mapToDTO)
+                .collect(Collectors.toList());
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
 npm install angular-oauth2-oidc
 
 ///Create a new service to handle authentication. For example, create a file auth.service.ts:
