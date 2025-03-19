@@ -1,3 +1,49 @@
+<div>
+  <label>Select an option:</label>
+  <select [formControl]="dropdownControl">
+    <option *ngFor="let option of options" [value]="option.value">
+      {{ option.label }}
+    </option>
+  </select>
+  <button (click)="submit()">Submit</button>
+</div>
+---------------------------------------------------------------------------------------------------------------------------
+mport { Component, OnInit } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { DropdownService } from '../services/dropdown.service';
+import { Parent } from '../models/parent-child';
+
+@Component({
+  selector: 'app-dropdown',
+  templateUrl: './dropdown.component.html',
+})
+export class DropdownComponent implements OnInit {
+  dropdownControl = new FormControl();
+  options: { label: string; value: string }[] = [];
+
+  constructor(private dropdownService: DropdownService) {}
+
+  ngOnInit(): void {
+    this.dropdownService.getData().subscribe((data: Parent[]) => {
+      this.options = data.flatMap((parent) =>
+        parent.children?.length
+          ? parent.children.map((child) => ({
+              label: `${parent.label} - ${child.label}`,
+              value: `${parent.code}-${child.code}`,
+            }))
+          : [{ label: parent.label, value: parent.code }]
+      );
+    });
+  }
+
+  submit(): void {
+    console.log('Submitted value:', this.dropdownControl.value);
+  }
+}
+
+---------------------------------------------------------------------------------------------------------------------------
+
+
 public class Mapper {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
