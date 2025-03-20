@@ -1,3 +1,54 @@
+<form (ngSubmit)="submit()">
+  <select [(ngModel)]="selectedValue" name="selectedOption" required>
+    <option *ngFor="let parent of parents" [value]="parent.code">
+      {{ parent.label }}
+    </option>
+    <optgroup *ngIf="parent.children.length" label="{{ parent.label }}">
+      <option
+        *ngFor="let child of parent.children"
+        [value]="parent.code + '-' + child.code"
+      >
+        {{ parent.label }} > {{ child.label }}
+      </option>
+    </optgroup>
+  </select>
+
+  <button type="submit">Submit</button>
+</form>
+---------------------------------------------------------------------------------------------------------------------------
+
+
+import { Component, OnInit } from '@angular/core';
+import { ParentService } from '../services/parent.service';
+import { ParentDTO, ChildDTO } from '../models/parent.model';
+
+@Component({
+  selector: 'app-parent-dropdown',
+  templateUrl: './parent-dropdown.component.html',
+  styleUrls: ['./parent-dropdown.component.scss']
+})
+export class ParentDropdownComponent implements OnInit {
+  parents: ParentDTO[] = [];
+  selectedValue: string = '';
+
+  constructor(private parentService: ParentService) {}
+
+  ngOnInit(): void {
+    this.parentService.getParents().subscribe((data) => {
+      this.parents = data;
+    });
+  }
+
+  submit() {
+    console.log('Selected Value:', this.selectedValue);
+    // Send this to the backend or process further
+  }
+}
+
+
+
+---------------------------------------------------------------------------------------------------------------------------
+
 <div>
   <label>Select an option:</label>
   <select [formControl]="dropdownControl">
