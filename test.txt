@@ -1,16 +1,19 @@
 <form (ngSubmit)="submit()">
   <select [(ngModel)]="selectedValue" name="selectedOption" required>
-    <option *ngFor="let parent of parents" [value]="parent.code">
-      {{ parent.label }}
-    </option>
-    <optgroup *ngIf="parent.children.length" label="{{ parent.label }}">
-      <option
-        *ngFor="let child of parent.children"
-        [value]="parent.code + '-' + child.code"
-      >
-        {{ parent.label }} > {{ child.label }}
+    <ng-container *ngFor="let parent of parents">
+      <!-- If no children, show parent directly -->
+      <option *ngIf="parent.children.length === 0" [value]="parent.code">
+        {{ parent.label }}
       </option>
-    </optgroup>
+
+      <!-- If parent has children, use optgroup -->
+      <optgroup *ngIf="parent.children.length > 0" [label]="parent.label">
+        <option *ngFor="let child of parent.children" 
+                [value]="parent.code + '-' + child.code">
+          {{ parent.label }} > {{ child.label }}
+        </option>
+      </optgroup>
+    </ng-container>
   </select>
 
   <button type="submit">Submit</button>
