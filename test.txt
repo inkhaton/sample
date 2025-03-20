@@ -1,3 +1,23 @@
+
+function splitStringAtDollar(input: string): string[] {
+  // Check if the string contains the character $
+  if (input.includes('$')) {
+    // Split the string at the first occurrence of $
+    return input.split('$');
+  } else {
+    // Return the original string as a single element array if $ is not found
+    return [input];
+  }
+}
+
+// Example Usage
+const inputString = "Hello$World";
+const result = splitStringAtDollar(inputString);
+
+console.log(result);  // Output: [ 'Hello', 'World' ]
+
+---------------------------------------------------------------------------------------------------------------------------
+
 <form (ngSubmit)="submit()">
   <select [(ngModel)]="selectedValue" name="selectedOption" required>
     <ng-container *ngFor="let parent of parents">
