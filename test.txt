@@ -68,17 +68,13 @@ acknowledgment.acknowledge();
 
 ---------------------------------------------------------------------------------------------------------------------------
 
-public void sendMessage(String queueUrl, String messageBody, String groupId) {
-        // Create a message with headers
-        Message message = MessageBuilder.withPayload(messageBody)
-                .setHeader("messageGroupId", groupId)  // FIFO queue grouping
-                .setHeader("messageDeduplicationId", UUID.randomUUID().toString()) // Required for FIFO queues
-                .build();
-
-        // Send the message to SQS
+ public void sendMessage(String queueUrl, String messageBody, String groupId) {
+        // Use lambda to set headers directly in send()
         sqsTemplate.send(to -> to
                 .queue(queueUrl)
-                .payload(message)
+                .payload(messageBody)
+                .header("messageGroupId", groupId)  // FIFO queue grouping
+                .header("messageDeduplicationId", UUID.randomUUID().toString()) // Required for FIFO queues
         );
 
         System.out.println("Message sent to queue: " + queueUrl);
