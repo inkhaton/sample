@@ -3,11 +3,79 @@
     <artifactId>spring-cloud-aws-starter-sqs</artifactId>
     <version>3.0.2</version> <!-- Check for the latest version -->
 </dependency>
-<dependency>
-    <groupId>software.amazon.awssdk</groupId>
-    <artifactId>sqs</artifactId>
-    <version>2.20.121</version> <!-- Check for the latest version -->
-</dependency>
+---------------------------------------------------------------------------------------------------------------------------
+
+@Configuration
+@EnableSqs
+public class SqsConfig {
+
+    @Bean
+    public SqsTemplate sqsTemplate() {
+        return SqsTemplate.builder()
+                .sqsAsyncClient(builder -> builder.build()) // Use default AWS credentials
+                .build();
+    }
+
+    @Bean
+    public SqsListenerConfigurer sqsListenerConfigurer() {
+        return registrar -> {
+            registrar.configureMessageHandler(handler -> {
+                handler.setAcknowledgementMode(
+                        io.awspring.cloud.sqs.listener.acknowledgement.AcknowledgementMode.ON_SUCCESS
+                );
+            });
+        };
+    }
+}
+---------------------------------------------------------------------------------------------------------------------------
+import io.awspring.cloud.sqs.operations.SqsTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SqsSenderService {
+
+    private final SqsTemplate sqsTemplate;
+
+    public SqsSenderService(SqsTemplate sqsTemplate) {
+        this.sqsTemplate = sqsTemplate;
+    }
+
+    public void sendMessage(String queueName, String message) {
+        sqsTemplate.send(to -> to
+                .queue(queueName)
+                .payload(message)
+        );
+        System.out.println("Message sent to queue: " + queueName);
+    }
+}
+
+---------------------------------------------------------------------------------------------------------------------------
+import io.awspring.cloud.sqs.annotation.SqsListener;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SqsListenerService {
+
+    @SqsListener("your-queue-name")
+    public void receiveMessage(String message) {
+        System.out.println("Received message: " + message);
+acknowledgment.acknowledge();
+    }
+}
+
+---------------------------------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------------------------------
+
+
+---------------------------------------------------------------------------------------------------------------------------
 
 ---------------------------------------------------------------------------------------------------------------------------
 function splitStringAtDollar(input: string): string[] {
