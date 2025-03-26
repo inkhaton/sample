@@ -1,4 +1,15 @@
+<dependency>
+    <groupId>io.awspring.cloud</groupId>
+    <artifactId>spring-cloud-aws-starter-sqs</artifactId>
+    <version>3.0.2</version> <!-- Check for the latest version -->
+</dependency>
+<dependency>
+    <groupId>software.amazon.awssdk</groupId>
+    <artifactId>sqs</artifactId>
+    <version>2.20.121</version> <!-- Check for the latest version -->
+</dependency>
 
+---------------------------------------------------------------------------------------------------------------------------
 function splitStringAtDollar(input: string): string[] {
   // Check if the string contains the character $
   if (input.includes('$')) {
