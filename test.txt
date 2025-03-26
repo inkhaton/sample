@@ -1,3 +1,6 @@
+
+
+
 <dependency>
     <groupId>io.awspring.cloud</groupId>
     <artifactId>spring-cloud-aws-starter-sqs</artifactId>
@@ -65,7 +68,19 @@ acknowledgment.acknowledge();
 
 ---------------------------------------------------------------------------------------------------------------------------
 
+ public void sendMessage(String queueUrl, String messageBody, String groupId) {
+        Message<String> message = MessageBuilder.withPayload(messageBody)
+                .setHeader("messageGroupId", groupId)  // FIFO queue grouping
+                .setHeader("messageDeduplicationId", UUID.randomUUID().toString()) // Required for FIFO queues
+                .build();
 
+        sqsTemplate.send(to -> to
+                .queue(queueUrl)
+                .payload(message)
+        );
+
+        System.out.println("Message sent to queue: " + queueUrl);
+    }
 ---------------------------------------------------------------------------------------------------------------------------
 
 
