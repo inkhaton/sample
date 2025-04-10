@@ -1,3 +1,16 @@
+SELECT 
+    child_a_cd, 
+    child_b_cd, 
+    COUNT(*) AS combination_count
+FROM 
+    A
+GROUP BY 
+    child_a_cd, 
+    child_b_cd
+ORDER BY 
+    combination_count DESC;  -- optional: shows most common combos first
+---------------------------------------------------------------------------------------------------------------------------
+
 
 Resources:
   MyECSTaskDefinition:
