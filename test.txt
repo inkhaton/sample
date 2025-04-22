@@ -1,3 +1,9 @@
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+
+import java.security.Key;
+
 Key key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)); // at least 256-bit key for HS256
 
 String jwt = Jwts.builder()
@@ -7,6 +13,7 @@ String jwt = Jwts.builder()
     .setExpiration(new Date(System.currentTimeMillis() + 3600_000)) // 1 hour
     .signWith(key, SignatureAlgorithm.HS256)
     .compact();
+
 ---------------------------------------------------------------------------------------------------------------------------
 
 import io.jsonwebtoken.Jwts;
