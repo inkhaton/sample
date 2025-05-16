@@ -1,3 +1,73 @@
+# crypto_helper.py
+from cryptography.fernet import Fernet
+
+def decrypt_env_value(enc_str: str, key: str) -> str:
+    if not enc_str.startswith("ENC(") or not enc_str.endswith(")"):
+        raise ValueError("Encrypted value must be wrapped in ENC(...)")
+    
+    encrypted = enc_str[4:-1]
+    fernet = Fernet(key.encode())
+    return fernet.decrypt(encrypted.encode()).decode()
+
+
+# main.py
+import os
+import sys
+from dotenv import load_dotenv
+from crypto_helper import decrypt_env_value
+
+# Load .env file
+load_dotenv()
+
+# Get command-line argument
+if len(sys.argv) != 2:
+    print("Usage: python main.py <MASTER_KEY>")
+    sys.exit(1)
+
+master_key = sys.argv[1]
+encrypted_secret = os.getenv("SECRET")
+
+# Decrypt and print
+try:
+    decrypted = decrypt_env_value(encrypted_secret, master_key)
+    print("Decrypted secret:", decrypted)
+except Exception as e:
+    print("Error during decryption:", e)
+
+
+
+
+
+import sys
+from cryptography.fernet import Fernet
+
+def encrypt_value(plaintext: str, key: str) -> str:
+    fernet = Fernet(key.encode())
+    encrypted = fernet.encrypt(plaintext.encode())
+    return f"ENC({encrypted.decode()})"
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python encrypt_value.py <MASTER_KEY> <PLAINTEXT>")
+        sys.exit(1)
+
+    master_key = sys.argv[1]
+    plaintext = sys.argv[2]
+
+    try:
+        encrypted_value = encrypt_value(plaintext, master_key)
+        print(encrypted_value)
+    except Exception as e:
+        print("Error during encryption:", e)
+
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
