@@ -1,3 +1,71 @@
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    username = Column(String)
+    email = Column(String)
+
+class Product(Base):
+    __tablename__ = 'products'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    price = Column(Integer)
+
+
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models import Base
+
+def init_db(user, password, host, port, dbname):
+    url = f'postgresql://{user}:{password}@{host}:{port}/{dbname}'
+    engine = create_engine(url)
+    Session = sessionmaker(bind=engine)
+    Base.metadata.create_all(engine)
+    return Session, engine
+
+def read_all(session, model_class):
+    """Read all records of the given model class."""
+    return session.query(model_class).all()
+
+def write_all(session, objects):
+    """Write a list of model objects."""
+    session.add_all(objects)
+    session.commit()
+
+
+from db import init_db, read_all, write_all
+from models import User, Product
+
+Session, _ = init_db('user', 'password', 'localhost', '5432', 'mydb')
+
+session = Session()
+
+# Write Users
+users = [User(username='alice', email='alice@example.com'),
+         User(username='bob', email='bob@example.com')]
+write_all(session, users)
+
+# Write Products
+products = [Product(name='Apple', price=100),
+            Product(name='Banana', price=50)]
+write_all(session, products)
+
+# Read Users
+all_users = read_all(session, User)
+print(all_users)
+
+# Read Products
+all_products = read_all(session, Product)
+print(all_products)
+
+session.close()
+
+
 # db.py
 
 from sqlalchemy import create_engine
