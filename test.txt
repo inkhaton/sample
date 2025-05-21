@@ -1,3 +1,148 @@
+---------------------------------------------------------------------------------------------------------------------------
+pip install sqlalchemy psycopg2-binary
+---------------------------------------------------------------------------------------------------------------------------
+from sqlalchemy import Column, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+# SQLAlchemy base class
+Base = declarative_base()
+
+# Define User DBO
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String)
+    email = Column(String)
+
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+
+# Database configuration
+DB_USER = 'your_username'
+DB_PASSWORD = 'your_password'
+DB_HOST = 'localhost'
+DB_PORT = '5432'
+DB_NAME = 'your_database'
+
+DATABASE_URL = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+
+# Create engine and session
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+
+# Create tables if they don’t exist
+Base.metadata.create_all(engine)
+
+# Function to read all users from the database
+def read_users():
+    session = Session()
+    try:
+        users = session.query(User).all()
+        return users
+    finally:
+        session.close()
+
+# Function to write a list of users to the database
+def write_users(user_list):
+    session = Session()
+    try:
+        session.add_all(user_list)
+        session.commit()
+    finally:
+        session.close()
+
+# Sample usage
+if __name__ == '__main__':
+    # Write sample users
+    users_to_add = [
+        User(username='alice', email='alice@example.com'),
+        User(username='bob', email='bob@example.com')
+    ]
+    write_users(users_to_add)
+
+    # Read and print all users
+    users = read_users()
+    for user in users:
+        print(user)
+---------------------------------------------------------------------------------------------------------------------------
+
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String)
+    email = Column(String)
+
+    def __repr__(self):
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+
+---------------------------------------------------------------------------------------------------------------------------
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models import Base
+
+# Database configuration
+DB_USER = 'your_username'
+DB_PASSWORD = 'your_password'
+DB_HOST = 'localhost'
+DB_PORT = '5432'
+DB_NAME = 'your_database'
+
+DATABASE_URL = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+
+# Engine and session
+engine = create_engine(DATABASE_URL)
+Session = sessionmaker(bind=engine)
+
+# Create tables
+Base.metadata.create_all(engine)
+---------------------------------------------------------------------------------------------------------------------------
+from db import Session
+from models import User
+
+# Function to read all users
+def read_users():
+    session = Session()
+    try:
+        return session.query(User).all()
+    finally:
+        session.close()
+
+# Function to write a list of users
+def write_users(user_list):
+    session = Session()
+    try:
+        session.add_all(user_list)
+        session.commit()
+    finally:
+        session.close()
+
+# Sample usage
+if __name__ == '__main__':
+    users_to_add = [
+        User(username='alice', email='alice@example.com'),
+        User(username='bob', email='bob@example.com')
+    ]
+    write_users(users_to_add)
+
+    users = read_users()
+    for user in users:
+        print(user)
+---------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------------
+
 # crypto_helper.py
 from cryptography.fernet import Fernet
 
