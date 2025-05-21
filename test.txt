@@ -1,3 +1,61 @@
+# db.py
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from models import Base
+
+def init_db(user, password, host, port, dbname):
+    """Initializes the database connection and returns a session factory."""
+    url = f'postgresql://{user}:{password}@{host}:{port}/{dbname}'
+    engine = create_engine(url)
+    Session = sessionmaker(bind=engine)
+    Base.metadata.create_all(engine)
+    return Session, engine
+
+# main.py
+
+from db import init_db
+from models import User
+
+# Set your DB connection parameters here or load from env/config
+DB_USER = 'your_username'
+DB_PASSWORD = 'your_password'
+DB_HOST = 'localhost'
+DB_PORT = '5432'
+DB_NAME = 'your_database'
+
+# Initialize the DB
+Session, _ = init_db(DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME)
+
+# Read all users
+def read_users():
+    session = Session()
+    try:
+        return session.query(User).all()
+    finally:
+        session.close()
+
+# Write a list of users
+def write_users(user_list):
+    session = Session()
+    try:
+        session.add_all(user_list)
+        session.commit()
+    finally:
+        session.close()
+
+# Example usage
+if __name__ == '__main__':
+    users_to_add = [
+        User(username='alice', email='alice@example.com'),
+        User(username='bob', email='bob@example.com')
+    ]
+    write_users(users_to_add)
+
+    users = read_users()
+    for user in users:
+        print(user)
+
 ---------------------------------------------------------------------------------------------------------------------------
 pip install sqlalchemy psycopg2-binary
 ---------------------------------------------------------------------------------------------------------------------------
