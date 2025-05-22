@@ -1,5 +1,25 @@
 id = Column(Integer, Sequence('sample_id_seq'), primary_key=True)
 
+import os
+
+def find_and_list_files_in_test_dirs(base_path):
+    for root, dirs, files in os.walk(base_path):
+        # Check if a "test" directory exists in the current folder
+        for dirname in dirs:
+            if dirname == "test":
+                test_dir_path = os.path.join(root, dirname)
+                print(f"\nFound 'test' directory: {test_dir_path}")
+                
+                # Recursively walk the "test" directory
+                for test_root, _, test_files in os.walk(test_dir_path):
+                    for file in test_files:
+                        full_path = os.path.join(test_root, file)
+                        file_name = os.path.basename(full_path)
+                        name_without_ext, _ = os.path.splitext(file_name)
+                        print(f"With extension: {file_name}")
+                        print(f"Without extension: {name_without_ext}")
+
+
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 from db import init_db
 from models import Sample
