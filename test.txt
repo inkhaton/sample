@@ -1,3 +1,57 @@
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+from db import init_db
+from models import Sample
+from my_queries import run_native_query  # assuming you put it in a separate file
+
+Session, _ = init_db('your_user', 'your_pass', 'localhost', '5432', 'your_db')
+session = Session()
+
+results = run_native_query(session)
+
+for sample in results:
+    print(sample)
+
+session.close()
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+from sqlalchemy import text
+from models import Sample
+
+def run_native_query(session):
+    sql = text("SELECT id, name, created_at FROM samples WHERE name = :name")
+    result = session.execute(sql, {"name": "Alice"})
+
+    # Manual mapping to Sample objects
+    samples = []
+    for row in result:
+        sample = Sample(id=row.id, name=row.name, created_at=row.created_at)
+        samples.append(sample)
+
+    return samples
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, DateTime
+from datetime import datetime
+
+Base = declarative_base()
+
+class Sample(Base):
+    __tablename__ = 'samples'
+
+    id = Column(Integer, primary_key=True)  # Numeric value (primary key)
+    name = Column(String(100))              # Varchar/String value
+    created_at = Column(DateTime, default=datetime.utcnow)  # Timestamp value
+
+    def __repr__(self):
+        return f"<Sample(id={self.id}, name='{self.name}', created_at={self.created_at})>"
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 
