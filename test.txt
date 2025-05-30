@@ -1,5 +1,30 @@
 import boto3
 
+def upload_to_s3(file_path, bucket_name, object_key):
+    s3 = boto3.client('s3')
+
+    try:
+        with open(file_path, "rb") as f:
+            response = s3.put_object(
+                Bucket=bucket_name,
+                Key=object_key,
+                Body=f
+            )
+        version_id = response.get("VersionId")
+        print(f"Uploaded {file_path} to s3://{bucket_name}/{object_key}")
+        if version_id:
+            print(f"Version ID: {version_id}")
+        else:
+            print("No Version ID returned (bucket may not have versioning enabled).")
+    except Exception as e:
+        print(f"Failed to upload: {e}")
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+import boto3
+
 def upload_to_s3(file_path, bucket_name, object_name=None):
     if object_name is None:
         object_name = file_path.split("/")[-1]
