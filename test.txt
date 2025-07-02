@@ -1,3 +1,12 @@
+import re
+
+def remove_consecutive_duplicates(text, substring):
+    # Escape substring to handle special characters
+    pattern = f'({re.escape(substring)})+'
+    return re.sub(pattern, substring, text)
+
+
+
 import boto3
 
 def upload_to_s3(file_path, bucket_name, object_key):
