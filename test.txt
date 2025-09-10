@@ -1,3 +1,28 @@
+DO $$
+DECLARE 
+    r RECORD;
+    qry TEXT;
+BEGIN
+    FOR r IN 
+        SELECT tablename
+        FROM pg_tables
+        WHERE schemaname = 'public'
+    LOOP
+        qry := format(
+            'SELECT %L AS table_name
+             WHERE EXISTS (
+                 SELECT 1 FROM %I WHERE created_date::date = CURRENT_DATE
+             )',
+            r.tablename, r.tablename
+        );
+
+        EXECUTE qry;
+    END LOOP;
+END $$;
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 import re
 
 def remove_consecutive_duplicates(text, substring):
