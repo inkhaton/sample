@@ -2,21 +2,36 @@ DO $$
 DECLARE 
     r RECORD;
     qry TEXT;
+    col_exists BOOLEAN;
 BEGIN
     FOR r IN 
         SELECT tablename
         FROM pg_tables
         WHERE schemaname = 'public'
     LOOP
-        qry := format(
-            'SELECT %L AS table_name
-             WHERE EXISTS (
-                 SELECT 1 FROM %I WHERE created_date::date = CURRENT_DATE
-             )',
-            r.tablename, r.tablename
-        );
+        -- check if column created_date exists in this table
+        SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = r.tablename
+              AND column_name = 'created_date'
+        )
+        INTO col_exists;
 
-        EXECUTE qry;
+        IF NOT col_exists THEN
+            RAISE NOTICE 'Table "%" does not contain column created_date', r.tablename;
+        ELSE
+            qry := format(
+                'SELECT %L AS table_name
+                 WHERE EXISTS (
+                     SELECT 1 FROM %I WHERE created_date::date = CURRENT_DATE
+                 )',
+                r.tablename, r.tablename
+            );
+
+            EXECUTE qry;
+        END IF;
     END LOOP;
 END $$;
 
