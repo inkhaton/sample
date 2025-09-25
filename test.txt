@@ -1,3 +1,101 @@
+import com.azure.identity.ClientSecretCredential;
+import com.azure.identity.ClientSecretCredentialBuilder;
+import com.microsoft.graph.requests.GraphServiceClient;
+import okhttp3.Request;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class GraphConfig {
+
+    @Value("${azure.client-id}")
+    private String clientId;
+
+    @Value("${azure.client-secret}")
+    private String clientSecret;
+
+    @Value("${azure.tenant-id}")
+    private String tenantId;
+
+    @Bean
+    public GraphServiceClient<Request> graphClient() {
+        ClientSecretCredential credential = new ClientSecretCredentialBuilder()
+                .clientId(clientId)
+                .clientSecret(clientSecret)
+                .tenantId(tenantId)
+                .build();
+
+        return GraphServiceClient.builder()
+                .authenticationProvider(request -> {
+                    String token = credential.getToken(
+                            new com.azure.core.credential.TokenRequestContext()
+                                    .addScopes("https://graph.microsoft.com/.default"))
+                            .block()
+                            .getToken();
+                    request.addHeader("Authorization", "Bearer " + token);
+                })
+                .buildClient();
+    }
+}
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+import com.microsoft.graph.models.Message;
+import com.microsoft.graph.requests.GraphServiceClient;
+import okhttp3.Request;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+public class MailService {
+    private final GraphServiceClient<Request> graphClient;
+
+    public MailService(GraphServiceClient<Request> graphClient) {
+        this.graphClient = graphClient;
+    }
+
+    public List<String> searchInbox(String userEmail, String searchText) {
+        return graphClient.users(userEmail)
+                .messages()
+                .buildRequest()
+                .filter("contains(subject,'" + searchText + "')")
+                .top(10)
+                .get()
+                .getCurrentPage()
+                .stream()
+                .map(Message::subject)
+                .collect(Collectors.toList());
+    }
+}
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+public class MailController {
+    private final MailService mailService;
+
+    public MailController(MailService mailService) {
+        this.mailService = mailService;
+    }
+
+    @GetMapping("/search-inbox")
+    public List<String> searchInbox(
+            @RequestParam String userEmail,
+            @RequestParam String query) {
+        return mailService.searchInbox(userEmail, query);
+    }
+}
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 DO $$
 DECLARE 
     r RECORD;
