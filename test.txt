@@ -1,3 +1,21 @@
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class AppException extends RuntimeException {
+
+    private static final Logger logger = LoggerFactory.getLogger(AppException.class);
+
+    public AppException(String message, Throwable cause) {
+        super(message, cause);
+        // Log message + original exception stack trace
+        logger.error(message, cause);
+    }
+}
+
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
+
 import com.azure.core.credential.TokenRequestContext;
 import com.azure.identity.ClientSecretCredential;
 import com.azure.identity.ClientSecretCredentialBuilder;
