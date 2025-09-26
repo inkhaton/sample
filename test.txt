@@ -1,3 +1,49 @@
+
+import com.microsoft.graph.models.Message;
+import com.microsoft.graph.requests.GraphServiceClient;
+import com.microsoft.graph.requests.MessageCollectionPage;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class GraphInboxFetcher {
+
+    private final GraphServiceClient<?> graphClient;
+
+    public GraphInboxFetcher(GraphServiceClient<?> graphClient) {
+        this.graphClient = graphClient;
+    }
+
+    public List<Message> getAllUnflaggedMessages(String userEmail) {
+        List<Message> allMessages = new ArrayList<>();
+
+        MessageCollectionPage page = graphClient.users(userEmail)
+                .mailFolders("inbox")
+                .messages()
+                .buildRequest()
+                .filter("flag/flagStatus ne 'flagged'")
+                .select("id,subject,from,flag,receivedDateTime")
+                .top(50) // up to 999 allowed
+                .get();
+
+        while (page != null) {
+            allMessages.addAll(page.getCurrentPage());
+
+            if (page.getNextPage() != null) {
+                page = page.getNextPage().buildRequest().get();
+            } else {
+                page = null;
+            }
+        }
+
+        return allMessages;
+    }
+}
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------
+
 import com.azure.identity.ClientSecretCredential;
 import com.azure.identity.ClientSecretCredentialBuilder;
 import com.microsoft.graph.authentication.TokenCredentialAuthProvider;
