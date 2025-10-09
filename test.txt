@@ -1,4 +1,63 @@
+import java.util.*;
+
+public class NameParser {
+    private static final Set<String> PREFIXES = Set.of("mr", "mrs", "ms", "miss", "dr", "prof", "rev", "hon");
+    private static final Set<String> SUFFIXES = Set.of("jr", "sr", "phd", "md", "ii", "iii", "iv");
+
+    public static Map<String, String> parse(String fullName) {
+        Map<String, String> parts = new HashMap<>();
+        if (fullName == null || fullName.isBlank()) return parts;
+
+        String[] tokens = fullName.replaceAll("[,.\"]", "").split("\\s+");
+        List<String> words = new ArrayList<>();
+        for (String t : tokens) if (!t.isBlank()) words.add(t.trim());
+
+        if (words.isEmpty()) return parts;
+
+        // Check for prefix
+        if (PREFIXES.contains(words.get(0).toLowerCase())) {
+            parts.put("prefix", words.remove(0));
+        }
+
+        // Check for suffix
+        if (SUFFIXES.contains(words.get(words.size() - 1).toLowerCase())) {
+            parts.put("suffix", words.remove(words.size() - 1));
+        }
+
+        // Split remaining
+        if (words.size() == 1) {
+            parts.put("first", words.get(0));
+        } else if (words.size() >= 2) {
+            parts.put("first", words.get(0));
+            parts.put("last", words.get(words.size() - 1));
+            if (words.size() > 2)
+                parts.put("middle", String.join(" ", words.subList(1, words.size() - 1)));
+        }
+
+        return parts;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(parse("Dr. John A. Smith Jr."));
+        System.out.println(parse("O'Neil, Patrick"));
+        System.out.println(parse("Maria del Carmen"));
+    }
+}
+
+
+------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 public final class MessageProperties {
+
 
     private MessageProperties() {
         // prevent instantiation
