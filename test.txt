@@ -1,30 +1,46 @@
 import java.util.*;
+import java.util.regex.*;
 
 public class NameParser {
+
     private static final Set<String> PREFIXES = Set.of("mr", "mrs", "ms", "miss", "dr", "prof", "rev", "hon");
     private static final Set<String> SUFFIXES = Set.of("jr", "sr", "phd", "md", "ii", "iii", "iv");
+    private static final String[] ORG_KEYWORDS = {
+        "inc", "inc.", "llc", "l.l.c", "corp", "corporation", "company", "co.", "co", "ltd", "ltd.",
+        "limited", "group", "holdings", "partners", "plc", "gmbh", "s.a.", "s.p.a.", "ag", "nv",
+        "bv", "associates", "foundation", "trust", "enterprise", "enterprises"
+    };
 
     public static Map<String, String> parse(String fullName) {
-        Map<String, String> parts = new HashMap<>();
+        Map<String, String> parts = new LinkedHashMap<>();
         if (fullName == null || fullName.isBlank()) return parts;
 
-        String[] tokens = fullName.replaceAll("[,.\"]", "").split("\\s+");
+        fullName = fullName.trim().replaceAll("[\"']", "");
+
+        // Detect likely organization first
+        if (isOrganization(fullName)) {
+            parts.put("organization", fullName);
+            return parts;
+        }
+
+        // Split into tokens
+        String[] tokens = fullName.replaceAll("[,]", "").split("\\s+");
         List<String> words = new ArrayList<>();
         for (String t : tokens) if (!t.isBlank()) words.add(t.trim());
 
         if (words.isEmpty()) return parts;
 
-        // Check for prefix
+        // Check prefix
         if (PREFIXES.contains(words.get(0).toLowerCase())) {
             parts.put("prefix", words.remove(0));
         }
 
-        // Check for suffix
+        // Check suffix
         if (SUFFIXES.contains(words.get(words.size() - 1).toLowerCase())) {
             parts.put("suffix", words.remove(words.size() - 1));
         }
 
-        // Split remaining
+        // Split remaining words
         if (words.size() == 1) {
             parts.put("first", words.get(0));
         } else if (words.size() >= 2) {
@@ -37,12 +53,46 @@ public class NameParser {
         return parts;
     }
 
+    private static boolean isOrganization(String name) {
+        String lower = name.toLowerCase();
+
+        // Contains org keyword
+        for (String k : ORG_KEYWORDS) {
+            if (lower.contains(k)) return true;
+        }
+
+        // Has @ means email address
+        if (lower.contains("@")) return true;
+
+        // All uppercase and longer than 2 characters
+        if (name.equals(name.toUpperCase()) && name.length() > 2) return true;
+
+        // Has digits (often product or company code)
+        if (name.matches(".*\\d.*")) return true;
+
+        // "of" or "&" inside name often indicates org
+        if (lower.contains(" of ") || lower.contains(" & ")) return true;
+
+        return false;
+    }
+
+    // Demo
     public static void main(String[] args) {
-        System.out.println(parse("Dr. John A. Smith Jr."));
-        System.out.println(parse("O'Neil, Patrick"));
-        System.out.println(parse("Maria del Carmen"));
+        List<String> tests = List.of(
+            "Dr. John A. Smith Jr.",
+            "O'Neil, Patrick",
+            "Acme Holdings LLC",
+            "BOARD OF EDUCATION",
+            "support@example.com",
+            "Smith & Wesson"
+        );
+
+        for (String t : tests) {
+            System.out.println(t + " -> " + parse(t));
+        }
     }
 }
+
 
 
 ------------------------------------------------------------------------------------------------------------
