@@ -1,3 +1,114 @@
+public class TestParser {
+    public static void main(String[] args) {
+        String[] examples = {
+            "Dr. John A. Smith Jr.",
+            "Ms. Anna-Marie Johnson",
+            "Acme Corporation",
+            "Smith LLC",
+            "Prof. Robert Langdon PhD",
+            "John Doe"
+        };
+
+        for (String e : examples) {
+            System.out.println(e + " → " + NameParser.parse(e));
+        }
+    }
+}
+
+
+import java.util.*;
+import java.util.regex.*;
+
+public class NameParser {
+
+    private static final Set<String> PREFIXES = Set.of(
+        "mr", "mrs", "ms", "miss", "dr", "prof", "rev", "sir", "madam"
+    );
+
+    private static final Set<String> SUFFIXES = Set.of(
+        "jr", "sr", "ii", "iii", "iv", "phd", "esq", "md", "jd"
+    );
+
+    private static final List<String> CORPORATE_KEYWORDS = List.of(
+        "inc", "inc.", "llc", "l.l.c.", "ltd", "ltd.", "corp", "corporation",
+        "company", "co.", "plc", "gmbh", "sa", "s.a.", "lp", "llp", "pc"
+    );
+
+    public static ParsedName parse(String input) {
+        if (input == null || input.isBlank()) {
+            return new ParsedName("", "", "", "");
+        }
+
+        String name = input.trim();
+        String lower = name.toLowerCase();
+
+        // Detect corporations → store full name in "lastName"
+        for (String corp : CORPORATE_KEYWORDS) {
+            if (lower.contains(corp)) {
+                return new ParsedName("", "", name, "");
+            }
+        }
+
+        // Split tokens
+        String[] tokens = name.split("\\s+");
+        String prefix = "";
+        String first = "";
+        String last = "";
+        String suffix = "";
+
+        List<String> tokenList = new ArrayList<>(Arrays.asList(tokens));
+
+        // Detect prefix
+        if (!tokenList.isEmpty() && PREFIXES.contains(cleanToken(tokenList.get(0)))) {
+            prefix = tokenList.remove(0);
+        }
+
+        // Detect suffix
+        if (!tokenList.isEmpty() && SUFFIXES.contains(cleanToken(tokenList.get(tokenList.size() - 1)))) {
+            suffix = tokenList.remove(tokenList.size() - 1);
+        }
+
+        // Assign remaining parts
+        if (tokenList.size() == 1) {
+            first = tokenList.get(0);
+        } else if (tokenList.size() >= 2) {
+            first = tokenList.get(0);
+            last = tokenList.get(tokenList.size() - 1);
+        }
+
+        return new ParsedName(prefix, first, last, suffix);
+    }
+
+    private static String cleanToken(String token) {
+        return token.toLowerCase().replaceAll("[^a-z0-9]", "");
+    }
+
+    // --- Data class ---
+    public static class ParsedName {
+        public final String prefix;
+        public final String firstName;
+        public final String lastName;
+        public final String suffix;
+
+        public ParsedName(String prefix, String first, String last, String suffix) {
+            this.prefix = prefix;
+            this.firstName = first;
+            this.lastName = last;
+            this.suffix = suffix;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("prefix=%s, first=%s, last=%s, suffix=%s",
+                    prefix, firstName, lastName, suffix);
+        }
+    }
+}
+
+
+
+-------------------------------------------------------------------------
+
 import java.util.*;
 import java.util.regex.*;
 
