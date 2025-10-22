@@ -1,4 +1,20 @@
- public static void main(String[] args) {
+    public static File ensureCorrectExtension(File file, String extension) {
+        String name = file.getName();
+        if (!name.toLowerCase().endsWith(extension.toLowerCase())) {
+            int dotIndex = name.lastIndexOf('.');
+            if (dotIndex != -1) {
+                name = name.substring(0, dotIndex);
+            }
+            File renamed = new File(file.getParent(), name + extension);
+            file.renameTo(renamed);
+            return renamed;
+        }
+        return file;
+    }
+}
+--------------------------------------------------------------------------------------
+
+public static void main(String[] args) {
         String[] examples = {
             "Dr. John A. Smith Jr.",
             "Ms. Anna-Marie Johnson",
