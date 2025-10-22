@@ -1,3 +1,16 @@
+https://www.federalregister.gov/api/v1/documents.json?conditions[agencies][]=securities-and-exchange-commission
+https://www.federalregister.gov/api/v1/documents.json?conditions[agencies][]=securities-and-exchange-commission&fields[]=document_number&fields[]=full_text_xml_url
+https://www.federalregister.gov/documents/full_text/xml/2025/10/03/2025-19382.xml
+
+ 
+<DEPDOC>[Release No. 34-104154; File No. SR-MSRB-2025-02]</DEPDOC>
+
+http://www.loc.gov/mods/v3 http://www.loc.gov/standards/mods/v3/mods-3-3.xsd
+
+https://www.federalregister.gov/reader-aids/developer-resources/ruby-client-gem
+
+
+
 
 
  public static String getCorrectedFileName(byte[] fileBytes, String originalName) {
