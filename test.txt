@@ -1,18 +1,29 @@
-    public static File ensureCorrectExtension(File file, String extension) {
-        String name = file.getName();
-        if (!name.toLowerCase().endsWith(extension.toLowerCase())) {
-            int dotIndex = name.lastIndexOf('.');
+
+
+ public static String getCorrectedFileName(byte[] fileBytes, String originalName) {
+        try {
+            // Detect MIME type
+            String detectedMimeType = tika.detect(fileBytes);
+            MimeTypes allTypes = MimeTypes.getDefaultMimeTypes();
+            MimeType mimeType = allTypes.forName(detectedMimeType);
+
+            String correctExtension = mimeType.getExtension(); // e.g. ".pdf", ".png"
+
+            // Strip any existing extension from original filename
+            String baseName = originalName;
+            int dotIndex = baseName.lastIndexOf('.');
             if (dotIndex != -1) {
-                name = name.substring(0, dotIndex);
+                baseName = baseName.substring(0, dotIndex);
             }
-            File renamed = new File(file.getParent(), name + extension);
-            file.renameTo(renamed);
-            return renamed;
+
+            // Return corrected filename
+            return baseName + correctExtension;
+
+        } catch (MimeTypeException e) {
+            // fallback: if MIME not recognized, just return original name
+            return originalName;
         }
-        return file;
-    }
-}
---------------------------------------------------------------------------------------
+    }--------------------------------------------------------------------------------------
 
 public static void main(String[] args) {
         String[] examples = {
