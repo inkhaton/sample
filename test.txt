@@ -1,9 +1,76 @@
+import json
+import boto3
+
+def lambda_handler(event, context):
+ 
+    bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
+    bedrock_agent = boto3.client("bedrock-agent-runtime", region_name="us-east-1")
+
+ 
+    model_id = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+    knowledge_base_id = "FFBCCZXCK9"   
+
+ 
+    query = event.get("prompt", "Summarize the key points in my project documentation.")
+
+    
+    retrieval = bedrock_agent.retrieve(
+        knowledgeBaseId=knowledge_base_id,
+        retrievalQuery={"text": query},
+        retrievalConfiguration={
+            "vectorSearchConfiguration": {"numberOfResults": 3}
+        }
+    )
+
+    # Combine the retrieved text chunks
+    if retrieval.get("retrievalResults"):
+        context_snippets = "\n\n".join(
+            r["content"]["text"] for r in retrieval["retrievalResults"]
+        )
+    else:
+        context_snippets = "No relevant context was found in the knowledge base."
+
+ 
+    prompt = f"""
+You are a helpful assistant. Use the context below to answer the user’s question in a concise and natural way. 
+Do not just repeat the context verbatim. If the answer is in the context, explain it naturally. 
+If the answer is not found, say you don’t know.
+
+Context:
+{context_snippets}
+
+Question:
+{query}
+"""
+
+ 
+    body = {
+        "anthropic_version": "bedrock-2023-05-31",
+        "messages": [
+            {"role": "user", "content": [{"type": "text", "text": prompt}]}
+        ],
+        "max_tokens": 512
+    }
+
+    response = bedrock.invoke_model(
+        modelId=model_id,
+        body=json.dumps(body)
+    )
+
+    result = json.loads(response["body"].read())
+    output_text = result["content"][0]["text"]
+
+ 
+    return {
+        "statusCode": 200,
+        "body": json.dumps({"response": output_text})
+    }
 
 
 
 
 
-
+------------------------------------------------------------------------------------------------------------------------------
  public static String getCorrectedFileName(byte[] fileBytes, String originalName) {
         try {
             // Detect MIME type
