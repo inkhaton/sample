@@ -1,7 +1,102 @@
+import com.microsoft.graph.serviceclient.GraphServiceClient;
+import com.microsoft.graph.models.*;
+import com.microsoft.kiota.authentication.*;
+import java.nio.file.*;
+import java.util.*;
+
+public class SendMailWithAttachment {
+    public static void main(String[] args) throws Exception {
+        final String accessToken = "YOUR_ACCESS_TOKEN";
+
+        AccessTokenProvider tokenProvider = (request) -> accessToken;
+        GraphServiceClient graphClient = new GraphServiceClient(tokenProvider);
+
+        // Email body
+        Message message = new Message();
+        message.subject = "Test email with attachment (Graph SDK 6.53.0)";
+
+        ItemBody body = new ItemBody();
+        body.contentType = BodyType.HTML;
+        body.content = "<p>Please find the attached file.</p>";
+        message.body = body;
+
+        Recipient recipient = new Recipient();
+        EmailAddress emailAddress = new EmailAddress();
+        emailAddress.address = "recipient@example.com";
+        recipient.emailAddress = emailAddress;
+        message.toRecipients = Arrays.asList(recipient);
+
+        // Create attachment
+        Path path = Paths.get("C:/path/to/sample.txt");
+        byte[] fileBytes = Files.readAllBytes(path);
+
+        FileAttachment attachment = new FileAttachment();
+        attachment.name = "sample.txt";
+        attachment.contentType = "text/plain";
+        attachment.contentBytes = fileBytes;
+
+        message.attachments = new LinkedList<>();
+        message.attachments.add(attachment);
+
+        // Build sendMail body
+        SendMailPostRequestBody requestBody = new SendMailPostRequestBody();
+        requestBody.message = message;
+        requestBody.saveToSentItems = true;
+
+        // Send email
+        graphClient.me().sendMail().post(requestBody);
+
+        System.out.println("✅ Email with attachment sent successfully!");
+    }
+}
 
 
+------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------
+import com.microsoft.graph.serviceclient.GraphServiceClient;
+import com.microsoft.graph.models.*;
+import com.microsoft.kiota.authentication.*;
+import java.util.*;
+
+public class SendMailNoAttachment {
+    public static void main(String[] args) throws Exception {
+        // Access token you obtained via MSAL or OAuth flow
+        final String accessToken = "YOUR_ACCESS_TOKEN";
+
+        // Auth provider
+        AccessTokenProvider tokenProvider = (request) -> accessToken;
+        GraphServiceClient graphClient = new GraphServiceClient(tokenProvider);
+
+        // Build email message
+        Message message = new Message();
+        message.subject = "Hello from Microsoft Graph Java SDK 6.53.0";
+
+        ItemBody body = new ItemBody();
+        body.contentType = BodyType.HTML;
+        body.content = "<p>This is a test email sent via Graph API 6.53.0.</p>";
+        message.body = body;
+
+        Recipient recipient = new Recipient();
+        EmailAddress emailAddress = new EmailAddress();
+        emailAddress.address = "recipient@example.com";
+        recipient.emailAddress = emailAddress;
+        message.toRecipients = Arrays.asList(recipient);
+
+        // Create request body
+        SendMailPostRequestBody requestBody = new SendMailPostRequestBody();
+        requestBody.message = message;
+        requestBody.saveToSentItems = true;
+
+        // Send email
+        graphClient.me().sendMail().post(requestBody);
+
+        System.out.println("✅ Email sent successfully!");
+    }
+}
 
 
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 import json
 import boto3
 
