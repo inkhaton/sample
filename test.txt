@@ -1,51 +1,44 @@
 import com.microsoft.graph.serviceclient.GraphServiceClient;
-import com.microsoft.graph.models.*;
-import com.microsoft.kiota.authentication.*;
+import com.microsoft.graph.models.Message;
+import com.microsoft.graph.models.FollowupFlag;
+import com.microsoft.graph.models.FlagStatus;
+import com.microsoft.graph.requests.BatchRequestStep;
+import com.microsoft.graph.requests.BatchRequestContent;
+import com.microsoft.graph.requests.BatchResponseContent;
 import com.microsoft.kiota.RequestInformation;
-import java.util.*;
 
-public class BatchFlagMessages {
-    public static void main(String[] args) throws Exception {
-        String token = "YOUR_ACCESS_TOKEN";
-        AccessTokenProvider tokenProvider = (request) -> token;
-        GraphServiceClient graphClient = new GraphServiceClient(tokenProvider);
+GraphServiceClient graphClient = …; // your auth setup
 
-        // Create batch body
-        BatchPostRequestBody batchBody = new BatchPostRequestBody();
-        batchBody.requests = new ArrayList<>();
+BatchRequestContent batch = new BatchRequestContent();
 
-        // List of message IDs
-        List<String> messageIds = Arrays.asList(
-            "AAMkADlmZDE...", 
-            "AAMkADQ3NjA..."
-        );
+for (String id : messageIds) {
+    FollowupFlag flag = new FollowupFlag();
+    flag.flagStatus = FlagStatus.Flagged;
 
-        // Add each patch request to the batch
-        for (String id : messageIds) {
-            FollowupFlag flag = new FollowupFlag();
-            flag.flagStatus = FlagStatus.Flagged;
+    Message update = new Message();
+    update.flag = flag;
 
-            Message patch = new Message();
-            patch.flag = flag;
+    RequestInformation reqInfo = graphClient
+        .me()
+        .messages()
+        .byMessageId(id)
+        .toPatchRequestInformation(update);
 
-            // Build RequestInformation manually
-            RequestInformation reqInfo = graphClient.me()
-                .messages()
-                .byMessageId(id)
-                .toPatchRequestInformation(patch);
+    BatchRequestStep step = new BatchRequestStep(
+        /* id */ UUID.randomUUID().toString(),
+        reqInfo,
+        /* dependsOn */ null
+    );
+    batch.addBatchRequestStep(step);
+}
 
-            // Each batch item
-            BatchRequestItem batchItem = new BatchRequestItem();
-            batchItem.id = UUID.randomUUID().toString();
-            batchItem.requestInformation = reqInfo;
+BatchResponseContent response = graphClient.batch().post(batch).get();
 
-            batchBody.requests.add(batchItem);
-        }
-
-        // Send the batch request
-        graphClient.batch().post(batchBody);
-
-        System.out.println("✅ All messages flagged via batch request");
+for (String stepId : batch.getRequestSteps().keySet()) {
+    if (response.getResponseById(stepId).isError()) {
+        System.err.println("Failure on step " + stepId + ": " + response.getResponseById(stepId).getError());
+    } else {
+        System.out.println("Success on step " + stepId);
     }
 }
 
