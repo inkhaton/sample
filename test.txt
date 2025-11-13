@@ -1,70 +1,56 @@
 import com.microsoft.graph.serviceclient.GraphServiceClient;
-import com.microsoft.graph.models.*;
-import com.microsoft.kiota.authentication.AccessTokenProvider;
+import com.microsoft.graph.models.Message;
+import com.microsoft.graph.models.FollowupFlag;
+import com.microsoft.graph.models.FlagStatus;
+import com.microsoft.graph.requests.BatchRequestContent;
+import com.microsoft.graph.requests.BatchResponseContent;
 import com.microsoft.kiota.RequestInformation;
-import com.microsoft.graph.batch.models.BatchRequestBody;
-import com.microsoft.graph.batch.models.BatchRequestItem;
-import com.microsoft.graph.batch.models.BatchResponseBody;
-
+import com.microsoft.kiota.authentication.AccessTokenProvider;
 import java.util.*;
 
 public class BatchFlagMessages {
     public static void main(String[] args) throws Exception {
+        String accessToken = "YOUR_ACCESS_TOKEN";
+        AccessTokenProvider authProvider = request -> accessToken;
+        GraphServiceClient graphClient = new GraphServiceClient(authProvider);
 
-        // ==== 1. Auth setup ====
-        String token = "YOUR_ACCESS_TOKEN";
-        AccessTokenProvider tokenProvider = request -> token;
-        GraphServiceClient graphClient = new GraphServiceClient(tokenProvider);
+        // Build the batch request content
+        BatchRequestContent batchContent = new BatchRequestContent(graphClient);
 
-        // ==== 2. Create batch body ====
-        BatchRequestBody batchBody = new BatchRequestBody();
-        batchBody.requests = new ArrayList<>();
-
-        // ==== 3. Prepare message updates ====
         List<String> messageIds = Arrays.asList(
-            "AAMkADlmZDE1YjYtNjEyMi1mY2FkLTQzMTAtN2E3NmRmZGU1ZWJi",
-            "AAMkADQ3NjA2OTItNWMzMi1mZTM2LWIxZDUtZDU3MjY4YzE4NjFi"
+            "ID1",
+            "ID2",
+            "ID3"
         );
 
-        for (String id : messageIds) {
+        for (String messageId : messageIds) {
             FollowupFlag flag = new FollowupFlag();
             flag.flagStatus = FlagStatus.Flagged;
 
-            Message patch = new Message();
-            patch.flag = flag;
+            Message patchMessage = new Message();
+            patchMessage.flag = flag;
 
-            // Build the PATCH request for each message
-            RequestInformation reqInfo = graphClient
+            RequestInformation patchRequestInfo = graphClient
                 .me()
                 .messages()
-                .byMessageId(id)
-                .toPatchRequestInformation(patch);
+                .byMessageId(messageId)
+                .toPatchRequestInformation(patchMessage);
 
-            // Convert to a BatchRequestItem
-            BatchRequestItem item = new BatchRequestItem();
-            item.id = UUID.randomUUID().toString();
-            item.requestInformation = reqInfo;
-
-            batchBody.requests.add(item);
+            String stepId = batchContent.addBatchRequestStep(patchRequestInfo);
+            System.out.println("Added step " + stepId + " for messageId " + messageId);
         }
 
-        // ==== 4. Execute batch ====
-        BatchRequestBuilder batchBuilder = graphClient.getBatchRequestBuilder();
-        BatchResponseBody response = batchBuilder.post(batchBody);
+        BatchResponseContent response = graphClient
+            .getBatchRequestBuilder()
+            .post(batchContent, null);
 
-        // ==== 5. Inspect responses ====
-        for (BatchRequestItem item : batchBody.requests) {
-            var subResponse = response.responses.get(item.id);
-            if (subResponse == null) {
-                System.out.println("No response for " + item.id);
-            } else if (subResponse.status >= 200 && subResponse.status < 300) {
-                System.out.println("✅ Success for message step " + item.id);
-            } else {
-                System.out.println("❌ Failed for " + item.id + " — status " + subResponse.status);
-            }
+        for (String stepId : response.getResponses().keySet()) {
+            var resp = response.getResponseById(stepId);
+            System.out.println("Step " + stepId + ": status=" + resp.status);
         }
     }
 }
+
 
 
 
