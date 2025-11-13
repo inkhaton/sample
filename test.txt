@@ -1,6 +1,60 @@
 import com.microsoft.graph.serviceclient.GraphServiceClient;
 import com.microsoft.graph.models.*;
 import com.microsoft.kiota.authentication.*;
+import com.microsoft.kiota.RequestInformation;
+import java.util.*;
+
+public class BatchFlagMessages {
+    public static void main(String[] args) throws Exception {
+        String token = "YOUR_ACCESS_TOKEN";
+        AccessTokenProvider tokenProvider = (request) -> token;
+        GraphServiceClient graphClient = new GraphServiceClient(tokenProvider);
+
+        // Create batch body
+        BatchPostRequestBody batchBody = new BatchPostRequestBody();
+        batchBody.requests = new ArrayList<>();
+
+        // List of message IDs
+        List<String> messageIds = Arrays.asList(
+            "AAMkADlmZDE...", 
+            "AAMkADQ3NjA..."
+        );
+
+        // Add each patch request to the batch
+        for (String id : messageIds) {
+            FollowupFlag flag = new FollowupFlag();
+            flag.flagStatus = FlagStatus.Flagged;
+
+            Message patch = new Message();
+            patch.flag = flag;
+
+            // Build RequestInformation manually
+            RequestInformation reqInfo = graphClient.me()
+                .messages()
+                .byMessageId(id)
+                .toPatchRequestInformation(patch);
+
+            // Each batch item
+            BatchRequestItem batchItem = new BatchRequestItem();
+            batchItem.id = UUID.randomUUID().toString();
+            batchItem.requestInformation = reqInfo;
+
+            batchBody.requests.add(batchItem);
+        }
+
+        // Send the batch request
+        graphClient.batch().post(batchBody);
+
+        System.out.println("✅ All messages flagged via batch request");
+    }
+}
+
+
+
+
+import com.microsoft.graph.serviceclient.GraphServiceClient;
+import com.microsoft.graph.models.*;
+import com.microsoft.kiota.authentication.*;
 import java.nio.file.*;
 import java.util.*;
 
