@@ -1,3 +1,12 @@
+
+   List<MyEntity> findByCreatedAtBetween(LocalDateTime olderThan, LocalDateTime newerThan);
+
+LocalDateTime now = LocalDateTime.now();
+LocalDateTime threeMinutesAgo = now.minusMinutes(3);
+LocalDateTime tenMinutesAgo = now.minusMinutes(10);
+
+------------------------------------------------------------------------------------------------------------------------------
+
 import com.microsoft.graph.serviceclient.GraphServiceClient;
 import com.microsoft.graph.models.Message;
 import com.microsoft.graph.models.FollowupFlag;
@@ -52,7 +61,7 @@ public class BatchFlagMessages {
 }
 
 
-
+------------------------------------------------------------------------------------------------------------------------------
 
 
 
