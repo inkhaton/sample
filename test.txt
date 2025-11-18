@@ -20,10 +20,25 @@ BUCKET_NAME = "FFFBucket"  # Hardcoded bucket name
 
 
 def get_file_from_s3(filename: str) -> str:
-    """Reads a text file from S3 and returns it as a UTF-8 string."""
+    """Reads a text file from S3 and attempts proper decoding."""
     try:
         response = s3.get_object(Bucket=BUCKET_NAME, Key=filename)
-        return response["Body"].read().decode("utf-8")
+        raw = response["Body"].read()
+
+        # Detect BOM/encoding
+        if raw.startswith(b'\xff\xfe') or raw.startswith(b'\xfe\xff'):
+            # UTF-16 (little or big endian)
+            return raw.decode("utf-16")
+        elif raw.startswith(b'\xef\xbb\xbf'):
+            # UTF-8 BOM
+            return raw.decode("utf-8-sig")
+        else:
+            # Try UTF-8, fallback to latin-1
+            try:
+                return raw.decode("utf-8")
+            except:
+                return raw.decode("latin-1")  # last resort fallback
+
     except Exception as e:
         raise RuntimeError(f"Error reading file '{filename}' from S3: {e}")
 
