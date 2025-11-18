@@ -32,55 +32,61 @@ print(all_text)
 
 
 ------------------------------------------------------------------------------------------------------------------------------
-import os
 import json
 import boto3
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# ----------------------------
-# Environment Variables
-# ----------------------------
-DB_SECRET_NAME = os.environ.get("DB_SECRET_NAME")
-DB_SECRET_REGION = os.environ.get("DB_SECRET_REGION", "us-east-1")
 
-BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "amazon.titan-embed-text-v2:0")
-EMBED_DIM = int(os.environ.get("EMBED_DIM", "1024"))
+# ============================================================
+# 🔧 HARD-CODED CONFIGURATION
+# ============================================================
 
-S3_BUCKET = os.environ.get("S3_BUCKET")
-S3_KEY_PREFIX = os.environ.get("S3_KEY_PREFIX", "bedrock_kb/")
+# PostgreSQL connection settings
+DB_HOST = "your-db-hostname.rds.amazonaws.com"
+DB_PORT = 5432
+DB_NAME = "your_database"
+DB_USER = "your_db_user"
+DB_PASSWORD = "your_password"   # ⚠ do not commit this in real usage
 
-MAX_CHUNK_SIZE = int(os.environ.get("MAX_CHUNK_SIZE", "500"))
+# AWS Bedrock embedding model
+BEDROCK_MODEL_ID = "amazon.titan-embed-text-v2:0"
+EMBED_DIM = 1024  # vector length
 
-# ----------------------------
-# AWS Clients
-# ----------------------------
-secrets_client = boto3.client("secretsmanager", region_name=DB_SECRET_REGION)
+# Where results will be stored
+S3_BUCKET = "your-bucket-name"
+S3_KEY_PREFIX = "knowledge-base-data/"  # optional folder
+
+# Text processing
+MAX_CHUNK_SIZE = 500  # characters per chunk
+
+
+# ============================================================
+# AWS CLIENTS
+# ============================================================
+
 bedrock = boto3.client("bedrock-runtime")
 s3 = boto3.client("s3")
 
 
-# ----------------------------
-# Helper Functions
-# ----------------------------
-
-def get_db_credentials():
-    secret = secrets_client.get_secret_value(SecretId=DB_SECRET_NAME)
-    return json.loads(secret["SecretString"])
-
+# ============================================================
+# FUNCTIONS
+# ============================================================
 
 def connect_db():
-    creds = get_db_credentials()
+    """Connect to PostgreSQL using hard-coded credentials."""
     return psycopg2.connect(
-        host=creds["host"],
-        port=creds.get("port", 5432),
-        database=creds["dbname"],
-        user=creds["username"],
-        password=creds["password"]
+        host=DB_HOST,
+        port=DB_PORT,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        sslmode="require"
     )
 
 
 def fetch_data():
+    """Load rows to embed."""
     conn = connect_db()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute("SELECT id, title, description, created_at FROM documents;")
@@ -90,10 +96,15 @@ def fetch_data():
 
 
 def chunk_text(text):
+    """Split long text into smaller embedding chunks."""
+    if len(text) <= MAX_CHUNK_SIZE:
+        return [text]
+
     return [text[i:i + MAX_CHUNK_SIZE] for i in range(0, len(text), MAX_CHUNK_SIZE)]
 
 
 def generate_embedding(text):
+    """Call Bedrock to generate an embedding for a text chunk."""
     body = {
         "input": [text],
         "parameters": {"dimension": EMBED_DIM, "normalize": True}
@@ -110,7 +121,9 @@ def generate_embedding(text):
 
 
 def upload_record_to_s3(record):
-    key = f"{S3_KEY_PREFIX}{record['id']}_{record['chunk_index']}.json"
+    """Store an embedding + metadata dictionary as JSON in S3."""
+    key = f"{S3_KEY_PREFIX}{record['id']}_chunk{record['chunk_index']}.json"
+
     s3.put_object(
         Bucket=S3_BUCKET,
         Key=key,
@@ -118,22 +131,22 @@ def upload_record_to_s3(record):
     )
 
 
-# ----------------------------
-# Lambda Handler
-# ----------------------------
+# ============================================================
+# LAMBDA ENTRYPOINT
+# ============================================================
 
 def lambda_handler(event, context):
-    print("Starting embedding pipeline...")
+    print("🚀 Starting PostgreSQL → Bedrock → S3 embedding pipeline")
 
     rows = fetch_data()
     total_chunks = 0
 
     for row in rows:
-        description = row.get("description", "")
-        if not description:
+        text = row.get("description", "")
+        if not text:
             continue
 
-        chunks = chunk_text(description)
+        chunks = chunk_text(text)
 
         for idx, chunk in enumerate(chunks):
             embedding = generate_embedding(chunk)
@@ -152,10 +165,18 @@ def lambda_handler(event, context):
             upload_record_to_s3(record)
             total_chunks += 1
 
-    msg = f"Completed. Uploaded {total_chunks} embedding chunks to s3://{S3_BUCKET}/{S3_KEY_PREFIX}"
-    print(msg)
+    message = (
+        f"✔ Completed. Uploaded {total_chunks} embeddings "
+        f"to s3://{S3_BUCKET}/{S3_KEY_PREFIX}"
+    )
 
-    return {"status": "success", "records_processed": len(rows), "chunks_uploaded": total_chunks}
+    print(message)
+
+    return {
+        "status": "success",
+        "records_processed": len(rows),
+        "chunks_uploade_
+
 
 
 
