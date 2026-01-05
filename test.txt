@@ -1,37 +1,137 @@
 ------------------------------------------------------------------------------------------------------------------------------
-You are a text-processing assistant. 
-Follow the user’s instructions precisely.
-Do not add extra commentary. Do not invent content.
-If information is missing or ambiguous, say so instead of guessing.
+Skip to content
+Chat history
+You said:
+I need a python program for a lambda function to call aws bedrock instance of amazon nova premier by sending a prompt to the lambda and getting a response back from nova
+ChatGPT said:
 
+Below is a minimal, production-ready Python Lambda example that:
 
-You will be given a document. Break it into sections using the rules below.
-Return the result ONLY as valid JSON. No commentary.
+    Receives a prompt as Lambda input
 
---- RULES FOR SECTIONING ---
-1. A new section starts when: 
-   - A line is in ALL CAPS
-   - A line starts with a number followed by a period (e.g., "1.", "2.")
-   - A heading keyword appears (e.g., "Introduction", "Summary", "Conclusion")
-2. Include the full text of each section exactly as it appears.
-3. Do not merge unrelated content.
-4. Do not alter the text.
+    Calls Amazon Bedrock
 
---- RETURN FORMAT ---
+    Invokes Amazon Nova Premier
+
+    Returns the model’s response
+
+This assumes:
+
+    Lambda runtime: Python 3.10+
+
+    IAM role has bedrock:InvokeModel
+
+    Region supports Nova Premier
+
+Lambda Function (Python)
+
+import json
+import boto3
+
+bedrock = boto3.client("bedrock-runtime")
+
+MODEL_ID = "amazon.nova-premier-v1:0"
+
+def lambda_handler(event, context):
+    # Extract prompt
+    prompt = event.get("prompt")
+    if not prompt:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({"error": "Missing 'prompt' in request"})
+        }
+
+    # Build request body (Nova uses Messages API)
+    body = {
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {"text": prompt}
+                ]
+            }
+        ]
+    }
+
+    try:
+        response = bedrock.invoke_model(
+            modelId=MODEL_ID,
+            body=json.dumps(body),
+            accept="application/json",
+            contentType="application/json"
+        )
+
+        response_body = json.loads(response["body"].read())
+
+        # Extract model text
+        output_text = response_body["output"]["message"]["content"][0]["text"]
+
+        return {
+            "statusCode": 200,
+            "body": json.dumps({
+                "response": output_text
+            })
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e)})
+        }
+
+Example Lambda Input
+
 {
-  "sections": [
+  "prompt": "Explain how AWS Bedrock works in one paragraph."
+}
+
+Example Lambda Output
+
+{
+  "response": "AWS Bedrock is a fully managed service that provides access to foundation models..."
+}
+
+Required IAM Policy (minimum)
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
     {
-      "title": "<string or null>",
-      "start_line": <line number>,
-      "end_line": <line number>,
-      "content": "<text>"
+      "Effect": "Allow",
+      "Action": "bedrock:InvokeModel",
+      "Resource": "*"
     }
   ]
 }
 
---- DOCUMENT TEXT START ---
-{{DOCUMENT_TEXT}}
---- DOCUMENT TEXT END ---
+(You can restrict Resource to the Nova Premier ARN if desired.)
+Notes (Important)
+
+    Nova models use the Messages API, not the legacy prompt format.
+
+    invoke_model is synchronous (best for Lambda).
+
+    Payload size limits still apply (~6 MB).
+
+    Cold starts are fine; no SDK bundling required (boto3 is included).
+
+If you want:
+
+    Streaming responses
+
+    Tool / function calling
+
+    Temperature / max token control
+
+    API Gateway integration
+
+    Retry / timeout tuning
+
+Tell me which and I’ll extend this cleanly.
+
+
+ChatGPT can make mistakes. Check important info.
+
 
 ------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------
