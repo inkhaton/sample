@@ -1,30 +1,4 @@
 ------------------------------------------------------------------------------------------------------------------------------
-Skip to content
-Chat history
-You said:
-I need a python program for a lambda function to call aws bedrock instance of amazon nova premier by sending a prompt to the lambda and getting a response back from nova
-ChatGPT said:
-
-Below is a minimal, production-ready Python Lambda example that:
-
-    Receives a prompt as Lambda input
-
-    Calls Amazon Bedrock
-
-    Invokes Amazon Nova Premier
-
-    Returns the model’s response
-
-This assumes:
-
-    Lambda runtime: Python 3.10+
-
-    IAM role has bedrock:InvokeModel
-
-    Region supports Nova Premier
-
-Lambda Function (Python)
-
 import json
 import boto3
 
@@ -78,59 +52,6 @@ def lambda_handler(event, context):
             "statusCode": 500,
             "body": json.dumps({"error": str(e)})
         }
-
-Example Lambda Input
-
-{
-  "prompt": "Explain how AWS Bedrock works in one paragraph."
-}
-
-Example Lambda Output
-
-{
-  "response": "AWS Bedrock is a fully managed service that provides access to foundation models..."
-}
-
-Required IAM Policy (minimum)
-
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "bedrock:InvokeModel",
-      "Resource": "*"
-    }
-  ]
-}
-
-(You can restrict Resource to the Nova Premier ARN if desired.)
-Notes (Important)
-
-    Nova models use the Messages API, not the legacy prompt format.
-
-    invoke_model is synchronous (best for Lambda).
-
-    Payload size limits still apply (~6 MB).
-
-    Cold starts are fine; no SDK bundling required (boto3 is included).
-
-If you want:
-
-    Streaming responses
-
-    Tool / function calling
-
-    Temperature / max token control
-
-    API Gateway integration
-
-    Retry / timeout tuning
-
-Tell me which and I’ll extend this cleanly.
-
-
-ChatGPT can make mistakes. Check important info.
 
 
 ------------------------------------------------------------------------------------------------------------------------------
